@@ -1,44 +1,32 @@
 from fastapi import FastAPI, UploadFile, File
+from gradio_client import Client, handle_file
 import uvicorn
 import os
-import requests
-import json
+
+# Connect to Hugging Face Space model
+client = Client("mrdbourke/qwen2.5-vl-food-detect")
 
 app = FastAPI()
 
-# Hugging Face Space API endpoint
-HF_SPACE_URL = "https://mrdbourke-qwen2-5-vl-food-detect.hf.space"
-
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    # Save uploaded file temporarily
+    # Save uploaded file
     file_path = f"temp_{file.filename}"
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
     try:
-        # Prepare the file for upload
-        with open(file_path, "rb") as f:
-            files = {"file": f}
-            
-            # Make request to Hugging Face Space
-            response = requests.post(
-                f"{HF_SPACE_URL}/predict",
-                files=files,
-                timeout=60
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-            else:
-                result = {"error": f"HF Space returned status {response.status_code}"}
+        # Use your exact working implementation
+        result = client.predict(
+            input_image=handle_file(file_path),
+            api_name="/predict"
+        )
         
         # Clean up temporary file
         if os.path.exists(file_path):
             os.remove(file_path)
             
-        return result
-        
+        return {"result": result}
     except Exception as e:
         # Clean up temporary file on error
         if os.path.exists(file_path):
@@ -47,10 +35,10 @@ async def predict(file: UploadFile = File(...)):
 
 @app.get("/")
 async def root():
-    return {"message": "Food Detection API is running!", "hf_space": HF_SPACE_URL}
+    return {"message": "Food Detection API is running!", "model": "mrdbourke/qwen2.5-vl-food-detect"}
 
 if __name__ == "__main__":
     print("🚀 Starting Food Detection API Server...")
-    print(f"�� Connected to HF Space: {HF_SPACE_URL}")
+    print("🌍 Connected to HF Space: mrdbourke/qwen2.5-vl-food-detect")
     print("📱 Use the Codespaces port forwarding URL for your Android app")
     uvicorn.run(app, host="0.0.0.0", port=8000)
