@@ -6,10 +6,17 @@ import base64
 
 app = FastAPI()
 
+# Try to get token from Codespaces secrets first, then environment variable
+HF_TOKEN = os.environ.get("HF_TOKEN") or os.environ.get("CODESPACES_SECRET_HF_TOKEN")
+
+if not HF_TOKEN:
+    print("⚠️  Warning: HF_TOKEN not found. Please set it in Codespaces secrets or environment variables.")
+    HF_TOKEN = "your_api_key_here"  # Fallback
+
 # Initialize the Inference Client
 client = InferenceClient(
     provider="hyperbolic",
-    api_key=os.environ.get("HF_TOKEN", "your_api_key_here")
+    api_key=HF_TOKEN
 )
 
 @app.post("/predict")
@@ -44,8 +51,15 @@ async def predict(file: UploadFile = File(...)):
             ],
         )
         
-        result = completion.choices[0].message.content
-        return {"result": result}
+        # Return the complete completion object
+        result = {
+            "message": completion.choices[0].message.content,
+            "model": completion.model,
+            "usage": completion.usage.model_dump() if completion.usage else None,
+            "finish_reason": completion.choices[0].finish_reason
+        }
+        
+        return result
         
     except Exception as e:
         return {"error": str(e)}
@@ -55,12 +69,16 @@ async def root():
     return {
         "message": "Food Detection API is running!", 
         "model": "Qwen/Qwen2.5-VL-7B-Instruct",
-        "provider": "hyperbolic"
+        "provider": "hyperbolic",
+        "token_set": bool(HF_TOKEN and HF_TOKEN != "your_api_key_here")
     }
 
 if __name__ == "__main__":
     print("🚀 Starting Food Detection API Server...")
     print("🌍 Using Qwen2.5-VL-7B-Instruct model via InferenceClient")
-    print("🔑 Make sure to set HF_TOKEN environment variable")
+    if HF_TOKEN and HF_TOKEN != "your_api_key_here":
+        print("🔑 HF_TOKEN is set and ready!")
+    else:
+        print("⚠️  HF_TOKEN not found. Please set it in Codespaces secrets.")
     print("📱 Use the Codespaces port forwarding URL for your Android app")
     uvicorn.run(app, host="0.0.0.0", port=8000)
