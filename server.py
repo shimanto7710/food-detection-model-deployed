@@ -1,44 +1,66 @@
-from fastapi import FastAPI, UploadFile, File
-from gradio_client import Client, handle_file
-import uvicorn
 import os
-
-# Connect to Hugging Face Space model
-client = Client("mrdbourke/qwen2.5-vl-food-detect")
+from fastapi import FastAPI, UploadFile, File
+from huggingface_hub import InferenceClient
+import uvicorn
+import base64
 
 app = FastAPI()
 
+# Initialize the Inference Client
+client = InferenceClient(
+    provider="hyperbolic",
+    api_key=os.environ.get("HF_TOKEN", "your_api_key_here")
+)
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    # Save uploaded file
-    file_path = f"temp_{file.filename}"
-    with open(file_path, "wb") as f:
-        f.write(await file.read())
-
     try:
-        # Use your exact working implementation with handle_file
-        result = client.predict(
-            input_image=handle_file(file_path),
-            api_name="/predict"
+        # Read the uploaded image
+        image_data = await file.read()
+        
+        # Convert image to base64 for the API
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        image_url = f"data:image/{file.content_type};base64,{image_base64}"
+        
+        # Create the completion request
+        completion = client.chat.completions.create(
+            model="Qwen/Qwen2.5-VL-7B-Instruct",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "What food items do you see in this image? Please describe them in detail."
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_url
+                            }
+                        }
+                    ]
+                }
+            ],
         )
         
-        # Clean up temporary file
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            
+        result = completion.choices[0].message.content
         return {"result": result}
+        
     except Exception as e:
-        # Clean up temporary file on error
-        if os.path.exists(file_path):
-            os.remove(file_path)
         return {"error": str(e)}
 
 @app.get("/")
 async def root():
-    return {"message": "Food Detection API is running!", "model": "mrdbourke/qwen2.5-vl-food-detect"}
+    return {
+        "message": "Food Detection API is running!", 
+        "model": "Qwen/Qwen2.5-VL-7B-Instruct",
+        "provider": "hyperbolic"
+    }
 
 if __name__ == "__main__":
     print("🚀 Starting Food Detection API Server...")
-    print("🌍 Connected to HF Space: mrdbourke/qwen2.5-vl-food-detect")
+    print("🌍 Using Qwen2.5-VL-7B-Instruct model via InferenceClient")
+    print("🔑 Make sure to set HF_TOKEN environment variable")
     print("📱 Use the Codespaces port forwarding URL for your Android app")
     uvicorn.run(app, host="0.0.0.0", port=8000)

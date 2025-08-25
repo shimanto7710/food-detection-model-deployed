@@ -1,13 +1,32 @@
 # Food Detection Model API
 
-A FastAPI-based REST API for food detection using the Qwen2.5-VL model deployed via Hugging Face Gradio.
+A FastAPI-based REST API for food detection using the Qwen2.5-VL-7B-Instruct model via Hugging Face Inference API.
 
 ## Features
 
-- Food detection from uploaded images
+- Food detection from uploaded images using Qwen2.5-VL-7B-Instruct
 - RESTful API endpoint
 - Docker support
 - Ready for GitHub Codespaces deployment
+- Uses Hugging Face Inference API (more reliable than gradio_client)
+
+## Setup
+
+### 1. Get Your Hugging Face API Token
+1. Go to [Hugging Face Settings](https://huggingface.co/settings/tokens)
+2. Create a new token with read permissions
+3. Copy the token
+
+### 2. Set Environment Variable
+```bash
+export HF_TOKEN="your_api_token_here"
+```
+
+Or create a `.env` file:
+```bash
+cp .env.example .env
+# Edit .env and add your token
+```
 
 ## API Endpoints
 
@@ -22,7 +41,7 @@ Upload an image file to get food detection results.
 **Response:**
 ```json
 {
-  "result": "detected_food_items"
+  "result": "Detailed food description from Qwen2.5-VL model"
 }
 ```
 
@@ -35,31 +54,25 @@ Upload an image file to get food detection results.
 pip install -r requirements.txt
 ```
 
-2. Run the server:
+2. Set your HF_TOKEN:
+```bash
+export HF_TOKEN="your_token_here"
+```
+
+3. Run the server:
 ```bash
 python server.py
 ```
 
-3. The API will be available at `http://localhost:8000`
-
-### Docker Deployment
-
-1. Build the image:
-```bash
-docker build -t food-detection-api .
-```
-
-2. Run the container:
-```bash
-docker run -p 8000:8000 food-detection-api
-```
+4. The API will be available at `http://localhost:8000`
 
 ### GitHub Codespaces
 
 1. Open this repository in GitHub Codespaces
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run the server: `python server.py`
-4. The API will be available on the Codespaces port
+2. Set your HF_TOKEN environment variable
+3. Install dependencies: `pip install -r requirements.txt`
+4. Run the server: `python server.py`
+5. The API will be available on the Codespaces port
 
 ## Usage Example
 
@@ -72,14 +85,17 @@ curl -X POST "http://localhost:8000/predict" \
 
 ## Model Information
 
-This API uses the [mrdbourke/qwen2.5-vl-food-detect](https://huggingface.co/mrdbourke/qwen2.5-vl-food-detect) model for food detection.
+This API uses the **Qwen/Qwen2.5-VL-7B-Instruct** model via Hugging Face Inference API for:
+- Image understanding and analysis
+- Food detection and description
+- Detailed visual reasoning
 
 ## Requirements
 
 - Python 3.9+
 - FastAPI
 - Uvicorn
-- Gradio Client
+- Hugging Face Hub
 - Other dependencies listed in requirements.txt
 
 ## License
