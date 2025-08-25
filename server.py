@@ -51,11 +51,15 @@ async def predict(file: UploadFile = File(...)):
             ],
         )
         
-        # Return the complete completion object
+        # Return the complete completion object with proper error handling
         result = {
             "message": completion.choices[0].message.content,
             "model": completion.model,
-            "usage": completion.usage.model_dump() if completion.usage else None,
+            "usage": {
+                "prompt_tokens": completion.usage.prompt_tokens if completion.usage else None,
+                "completion_tokens": completion.usage.completion_tokens if completion.usage else None,
+                "total_tokens": completion.usage.total_tokens if completion.usage else None
+            } if completion.usage else None,
             "finish_reason": completion.choices[0].finish_reason
         }
         
