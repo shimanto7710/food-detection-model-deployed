@@ -16,7 +16,7 @@ async def predict(file: UploadFile = File(...)):
         f.write(await file.read())
 
     try:
-        # Use your exact working implementation
+        # Use your exact working implementation with handle_file
         result = client.predict(
             input_image=handle_file(file_path),
             api_name="/predict"
