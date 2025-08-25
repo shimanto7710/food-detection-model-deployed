@@ -29,7 +29,7 @@ async def predict(file: UploadFile = File(...)):
         image_base64 = base64.b64encode(image_data).decode('utf-8')
         image_url = f"data:image/{file.content_type};base64,{image_base64}"
         
-        # Create the completion request
+        # Create the completion request with structured prompt
         completion = client.chat.completions.create(
             model="Qwen/Qwen2.5-VL-7B-Instruct",
             messages=[
@@ -38,7 +38,21 @@ async def predict(file: UploadFile = File(...)):
                     "content": [
                         {
                             "type": "text",
-                            "text": "What food items do you see in this image? Please describe them in detail."
+                            "text": """Analyze this image and identify all food items. For each food item, provide:
+1. Food name
+2. Approximate location (top-left, center, bottom-right, etc.)
+3. Confidence level (high/medium/low)
+
+Format your response as a JSON-like structure with this format:
+{
+  "food_items": [
+    {
+      "name": "food_name",
+      "location": "position_description",
+      "confidence": "high/medium/low"
+    }
+  ]
+}"""
                         },
                         {
                             "type": "image_url",
